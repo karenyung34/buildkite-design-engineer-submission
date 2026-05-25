@@ -228,7 +228,6 @@ const BuildHeader: React.FC<BuildHeaderProps> = ({
             // but the chevron button (with aria-expanded + aria-controls) is the keyboard-accessible
             // disclosure trigger. Making the row itself a button would break ARIA (it contains
             // nested interactive controls — chevron, BuildActionsComboButton).
-            // eslint-disable-next-line jsx-a11y/click-events-have-key-events, jsx-a11y/no-static-element-interactions
             <div
               className="group/pr px-1.5 pb-2 rounded-b-md transition-all duration-50 ease-in-out relative cursor-pointer"
               onClick={() => setIsExpanded(!isExpanded)}
@@ -437,18 +436,13 @@ const BuildHeader: React.FC<BuildHeaderProps> = ({
               )}
 
               <div
-<<<<<<< HEAD
-                className={`transition-all duration-300 ease-in-out overflow-hidden ${
-                  isExpanded ? "max-h-[900px] opacity-100" : "max-h-0 opacity-0"
-=======
                 id="build-details-panel"
                 className={`transition-all duration-300 ease-in-out overflow-hidden motion-reduce:transition-none ${
-                  isExpanded ? "max-h-[600px] opacity-100" : "max-h-0 opacity-0"
->>>>>>> ff6f3712b2c5c11dab3b332365958ccdd4bfc389
+                  isExpanded ? "max-h-[900px] opacity-100" : "max-h-0 opacity-0"
                 }`}
                 inert={!isExpanded ? "" : undefined}
                 aria-hidden={!isExpanded}
-                >
+              >
 
                 {/*
                 ──────────────────────────────────────────────────────────────────
@@ -466,7 +460,6 @@ const BuildHeader: React.FC<BuildHeaderProps> = ({
                 ──────────────────────────────────────────────────────────────────
                 */}
 
-<<<<<<< HEAD
                 <div className="border-t border-zinc-200 mt-2 px-3 py-3">
                   {failureGroups.length > 0 ? (
                     <section
@@ -642,10 +635,6 @@ const BuildHeader: React.FC<BuildHeaderProps> = ({
                       No failure details in this build.
                     </p>
                   )}
-=======
-                <div className="border-t border-zinc-200 mt-2 px-2 py-6 text-center text-sm text-zinc-400">
-                  Your solution goes here — see AGENTS.md and README.md
->>>>>>> ff6f3712b2c5c11dab3b332365958ccdd4bfc389
                 </div>
               </div>
             </div>
