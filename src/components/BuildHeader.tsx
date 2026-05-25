@@ -17,10 +17,13 @@ import {
   ChevronsDownUp,
   Check,
   Loader2,
+  AlertCircle,
+  Ban,
+  ArrowRightCircle,
 } from "lucide-react";
 import BuildActionsComboButton from "./BuildActionsComboButton";
 import { HeaderBreadcrumbStubs } from "./HeaderBreadcrumbStubs";
-import { BuildStep } from "@/types/build";
+import { BuildStep, Job } from "@/types/build";
 import { cn } from "@/lib/utils";
 import {
   getStatusLabel,
@@ -48,6 +51,118 @@ interface BuildHeaderProps {
   className?: string;
 }
 
+type FailureDetails = {
+  step: BuildStep;
+  job: Job | null;
+  stepIndex: number;
+};
+
+function getBlockedSteps(steps: BuildStep[], afterIndex: number): BuildStep[] {
+  return steps.slice(afterIndex + 1).filter((step) => step.status === "pending");
+}
+
+type FailedJobEntry = {
+  step: BuildStep;
+  job: Job | null;
+};
+
+function findAllFailedJobs(steps: BuildStep[]): FailedJobEntry[] {
+  const failures: FailedJobEntry[] = [];
+  for (const step of steps) {
+    if (step.jobs?.length) {
+      for (const job of step.jobs) {
+        if (job.status === "failed") {
+          failures.push({ step, job });
+        }
+      }
+    } else if (step.status === "failed") {
+      failures.push({ step, job: null });
+    }
+  }
+  return failures;
+}
+
+type NextAction = {
+  id: string;
+  href?: string;
+  label: React.ReactNode;
+};
+
+function buildNextActions(failure: FailureDetails): NextAction[] {
+  const actions: NextAction[] = [
+    {
+      id: "logs",
+      href: `#logs-${failure.job?.id ?? failure.step.id}`,
+      label: "View logs",
+    },
+  ];
+
+  const passedSiblingJob = failure.step.jobs?.find(
+    (job) => job.status === "complete" && job.id !== failure.job?.id,
+  );
+  if (passedSiblingJob) {
+    const compareTarget =
+      passedSiblingJob.name.match(/\(([^)]+)\)/)?.[1] ?? passedSiblingJob.name;
+    actions.push({
+      id: "compare",
+      href: `#compare-${passedSiblingJob.id}`,
+      label: `Compare with ${compareTarget}`,
+    });
+  }
+
+  actions.push({
+    id: "retry",
+    href: "#retry-failed-jobs",
+    label: "Retry",
+  });
+
+  return actions;
+}
+
+type FailureGroup = {
+  id: string;
+  step: BuildStep;
+  job: Job | null;
+  label: string;
+  exitCode: number | null | undefined;
+  duration: string | undefined;
+  blockedSteps: BuildStep[];
+  nextActions: NextAction[];
+};
+
+function buildFailureGroups(steps: BuildStep[]): FailureGroup[] {
+  return findAllFailedJobs(steps).map((entry) => {
+    const stepIndex = steps.findIndex((s) => s.id === entry.step.id);
+    const failure: FailureDetails = {
+      step: entry.step,
+      job: entry.job,
+      stepIndex,
+    };
+    const label = entry.job?.name ?? entry.step.name;
+
+    return {
+      id: entry.job?.id ?? entry.step.id,
+      step: entry.step,
+      job: entry.job,
+      label,
+      exitCode: entry.job?.exitCode ?? entry.step.exitCode,
+      duration: entry.job?.duration ?? entry.step.duration,
+      blockedSteps: getBlockedSteps(steps, stepIndex),
+      nextActions: buildNextActions(failure),
+    };
+  });
+}
+
+const linkClassName =
+  "font-medium underline underline-offset-2 decoration-zinc-400 hover:decoration-zinc-600";
+
+function handlePlaceholderLinkClick(
+  e: React.MouseEvent<HTMLAnchorElement>,
+) {
+  e.preventDefault();
+  e.stopPropagation();
+}
+
 const BuildHeader: React.FC<BuildHeaderProps> = ({
   pipelineName,
   buildNumber,
@@ -66,6 +181,7 @@ const BuildHeader: React.FC<BuildHeaderProps> = ({
   const statusColors = getStatusColors(status);
   const buildNumberLabel = `#${buildNumber.replace(/^#/, "")}`;
   const buildStats = computeBuildStats(buildSteps);
+  const failureGroups = buildFailureGroups(buildSteps);
 
   const statusPrefix =
     status === "running"
@@ -108,6 +224,11 @@ const BuildHeader: React.FC<BuildHeaderProps> = ({
 
           {/* PR row + expand/collapse + progress bar */}
           {pullRequest && (
+            // Clickable-card pattern: the row toggles expansion on mouse click as a convenience,
+            // but the chevron button (with aria-expanded + aria-controls) is the keyboard-accessible
+            // disclosure trigger. Making the row itself a button would break ARIA (it contains
+            // nested interactive controls — chevron, BuildActionsComboButton).
+            // eslint-disable-next-line jsx-a11y/click-events-have-key-events, jsx-a11y/no-static-element-interactions
             <div
               className="group/pr px-1.5 pb-2 rounded-b-md transition-all duration-50 ease-in-out relative cursor-pointer"
               onClick={() => setIsExpanded(!isExpanded)}
@@ -116,28 +237,31 @@ const BuildHeader: React.FC<BuildHeaderProps> = ({
             >
               <div className="pl-1 pt-1 pb-0.5">
                 <div className="flex flex-col sm:flex-row sm:items-center gap-1">
-                  <div className="flex items-center gap-3 min-w-0 flex-1">
-                    <div className="flex items-center gap-2 flex-0">
+                  <div className="flex flex-wrap items-center gap-x-3 gap-y-2 min-w-0 flex-1">
+                    <div className="flex items-center gap-2 shrink-0">
                       <button
                         type="button"
-                        className={cn("hidden group-hover/pr:flex py-1.5 px-[7px] rounded-md transition-colors flex-shrink-0 mt-0.5 bg-blue-600")}
+                        className={cn(
+                          "hidden group-hover/pr:flex group-focus-within/pr:flex py-1.5 px-[7px] rounded-md transition-colors flex-shrink-0 mt-0.5 bg-blue-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2",
+                        )}
                         aria-label={
                           isExpanded ? "Collapse details" : "Expand details"
                         }
                         aria-expanded={isExpanded}
+                        aria-controls="build-details-panel"
                         onClick={(e) => {
                           e.stopPropagation();
                           setIsExpanded(!isExpanded);
                         }}
                       >
                         {isExpanded ? (
-                          <ChevronsDownUp size={14} strokeWidth={2.5} className="text-white" />
+                          <ChevronsDownUp size={14} strokeWidth={2.5} className="text-white" aria-hidden="true" />
                         ) : (
-                          <ChevronsUpDown size={14} strokeWidth={2.5} className="text-white" />
+                          <ChevronsUpDown size={14} strokeWidth={2.5} className="text-white" aria-hidden="true" />
                         )}
                       </button>
                       {status === "failed" && (
-                        <div className="group-hover/pr:hidden">
+                        <div className="group-hover/pr:hidden group-focus-within/pr:hidden" aria-hidden="true">
                           <svg
                             width="28px"
                             height="28px"
@@ -164,15 +288,15 @@ const BuildHeader: React.FC<BuildHeaderProps> = ({
                         </div>
                       )}
                       {status === "running" && (
-                        <div className="rounded-full bg-amber-500 p-1 group-hover/pr:hidden">
+                        <div className="rounded-full bg-amber-500 p-1 group-hover/pr:hidden group-focus-within/pr:hidden" aria-hidden="true">
                           <Loader2
                             size={16}
-                            className="text-white animate-spin"
+                            className="text-white animate-spin motion-reduce:animate-none"
                           />
                         </div>
                       )}
                       {(status === "passed" || status === "complete") && (
-                        <div className="rounded-full bg-green-500 p-1 group-hover/pr:hidden">
+                        <div className="rounded-full bg-green-500 p-1 group-hover/pr:hidden group-focus-within/pr:hidden" aria-hidden="true">
                           <Check
                             size={16}
                             className="text-white"
@@ -181,19 +305,19 @@ const BuildHeader: React.FC<BuildHeaderProps> = ({
                         </div>
                       )}
                       {status === "canceled" && (
-                        <div className="rounded-full bg-gray-400 p-1 group-hover/pr:hidden">
+                        <div className="rounded-full bg-gray-400 p-1 group-hover/pr:hidden group-focus-within/pr:hidden" aria-hidden="true">
                           <X size={16} className="text-white" />
                         </div>
                       )}
                       {status === "pending" && (
-                        <div className="rounded-full bg-gray-300 p-1 group-hover/pr:hidden">
+                        <div className="rounded-full bg-gray-300 p-1 group-hover/pr:hidden group-focus-within/pr:hidden" aria-hidden="true">
                           <Clock size={16} className="text-gray-600" />
                         </div>
                       )}
 
                       <div className="flex flex-col">
                         <div className="flex items-center gap-1 text-sm/4 text-zinc-900 font-semibold">
-                          <span className="hidden sm:inline">
+                          <span className="sr-only sm:not-sr-only sm:inline">
                             {statusPrefix}
                           </span>
                           <span>{buildStats.duration}</span>
@@ -204,30 +328,35 @@ const BuildHeader: React.FC<BuildHeaderProps> = ({
                       </div>
                     </div>
 
-                    <div className="h-8 w-px bg-zinc-300 flex-shrink-0" />
+                    <div className="flex min-w-0 flex-[1_1_14rem] items-center gap-3">
+                      <div
+                        className="hidden sm:block h-8 w-px bg-zinc-300 shrink-0 self-center"
+                        aria-hidden="true"
+                      />
 
-                    <div className="flex-1 min-w-0">
-                      <h3 className="text-sm/4 font-medium text-zinc-800 truncate mb-0">
-                        <span className="hidden sm:inline">
-                          Pull Request #{pullRequest.number}:{" "}
-                        </span>
-                        <span className="sm:hidden">
-                          PR #{pullRequest.number}:{" "}
-                        </span>
-                        {pullRequest.title}
-                      </h3>
+                      <div className="min-w-0 flex-1">
+                        <h3 className="text-sm/4 font-medium text-zinc-800 mb-0 line-clamp-2 sm:line-clamp-1">
+                          <span className="hidden sm:inline">
+                            Pull Request #{pullRequest.number}:{" "}
+                          </span>
+                          <span className="sm:hidden">
+                            PR #{pullRequest.number}:{" "}
+                          </span>
+                          {pullRequest.title}
+                        </h3>
 
                       <div className="flex items-center gap-2 text-xs/4 text-zinc-600">
                         <div className="flex items-center space-x-1">
                           <span className="font-medium">
                             {pullRequest.author.name}
                           </span>
-                          <span className="hidden sm:inline">triggered on</span>
-                          <span className="sm:hidden">•</span>
+                          <span className="sr-only sm:not-sr-only sm:inline">triggered on</span>
+                          <span className="sm:hidden" aria-hidden="true">•</span>
                           <span className="truncate">
                             {pullRequest.triggeredAt}
                           </span>
                         </div>
+                      </div>
                       </div>
                     </div>
                   </div>
@@ -248,11 +377,12 @@ const BuildHeader: React.FC<BuildHeaderProps> = ({
 
               {/* Segmented progress bar — hidden while expanded */}
               {!isExpanded && buildSteps.length > 0 && (
-                <div
-                  className="mt-1.5 cursor-pointer group"
-                  onClick={() => setIsExpanded(true)}
-                >
-                  <div className="flex gap-[1px] h-1.5 rounded-sm overflow-hidden bg-zinc-100 transition-all">
+                <div className="mt-1.5 group">
+                  <div
+                    className="flex gap-[1px] h-2 rounded-sm overflow-hidden bg-zinc-100 transition-all"
+                    role="list"
+                    aria-label="Build steps"
+                  >
                     {buildSteps.map((step, index) => {
                       const weight =
                         step.jobs && step.jobs.length > 0
@@ -280,11 +410,13 @@ const BuildHeader: React.FC<BuildHeaderProps> = ({
                           key={`progress-${step.id}-${index}`}
                           className={`h-full relative overflow-hidden ${bgColor}`}
                           style={{ width: `${widthPercent}%` }}
+                          role="listitem"
+                          aria-label={`${step.name} — ${getStatusLabel(step.status)}`}
                           title={`${step.name} - ${getStatusLabel(step.status)}`}
                         >
                           {step.status === "in-progress" && (
                             <div
-                              className="absolute inset-0 animate-barber"
+                              className="absolute inset-0 animate-barber motion-reduce:animate-none"
                               style={{
                                 backgroundImage: `repeating-linear-gradient(
                                   -45deg,
@@ -305,9 +437,17 @@ const BuildHeader: React.FC<BuildHeaderProps> = ({
               )}
 
               <div
+<<<<<<< HEAD
                 className={`transition-all duration-300 ease-in-out overflow-hidden ${
+                  isExpanded ? "max-h-[900px] opacity-100" : "max-h-0 opacity-0"
+=======
+                id="build-details-panel"
+                className={`transition-all duration-300 ease-in-out overflow-hidden motion-reduce:transition-none ${
                   isExpanded ? "max-h-[600px] opacity-100" : "max-h-0 opacity-0"
+>>>>>>> ff6f3712b2c5c11dab3b332365958ccdd4bfc389
                 }`}
+                inert={!isExpanded ? "" : undefined}
+                aria-hidden={!isExpanded}
                 >
 
                 {/*
@@ -326,8 +466,186 @@ const BuildHeader: React.FC<BuildHeaderProps> = ({
                 ──────────────────────────────────────────────────────────────────
                 */}
 
+<<<<<<< HEAD
+                <div className="border-t border-zinc-200 mt-2 px-3 py-3">
+                  {failureGroups.length > 0 ? (
+                    <section
+                      aria-labelledby="build-failure-summary"
+                      className="text-left space-y-2"
+                    >
+                      <h2 id="build-failure-summary" className="sr-only">
+                        Build failure triage
+                      </h2>
+                      {failureGroups.length > 1 && (
+                        <p className="text-xs text-zinc-600">
+                          {buildStats.failedCount} failed job
+                          {buildStats.failedCount !== 1 ? "s" : ""} — triage
+                          each below
+                        </p>
+                      )}
+
+                      {failureGroups.map((group, groupIndex) => (
+                        <article
+                          key={group.id}
+                          aria-labelledby={`failure-group-${group.id}`}
+                          className="rounded-md border border-zinc-200 overflow-hidden shadow-sm"
+                        >
+                          <div
+                            id={`failure-group-${group.id}`}
+                            className="flex items-center gap-2 border-b border-zinc-200 bg-zinc-50 px-3 py-1.5"
+                          >
+                            <span className="rounded-full bg-red-100 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-red-800">
+                              Failed job
+                            </span>
+                            <h3 className="text-xs font-semibold text-zinc-900">
+                              {group.label}
+                              {failureGroups.length > 1 && (
+                                <span className="font-normal text-zinc-500">
+                                  {" "}
+                                  ({groupIndex + 1} of {failureGroups.length})
+                                </span>
+                              )}
+                            </h3>
+                          </div>
+
+                          <div className="grid gap-2 p-2 sm:grid-cols-3">
+                            <div className="flex flex-col rounded-md border border-red-200/80 bg-red-50/60 px-3 py-2.5">
+                              <div className="flex items-center gap-1.5">
+                                <AlertCircle
+                                  size={14}
+                                  className="text-red-600 flex-shrink-0"
+                                  aria-hidden
+                                />
+                                <p className="text-xs font-semibold uppercase tracking-wide text-red-800">
+                                  Failure
+                                </p>
+                              </div>
+                              <div className="mt-2 flex flex-1 flex-col gap-1">
+                                {group.job && (
+                                  <p className="text-xs text-zinc-600">
+                                    Step{" "}
+                                    <span className="font-medium text-zinc-900">
+                                      {group.step.name}
+                                    </span>
+                                  </p>
+                                )}
+                                {group.exitCode != null && (
+                                  <p className="text-xs text-zinc-600">
+                                    Exit code{" "}
+                                    <span className="font-semibold text-zinc-900">
+                                      {group.exitCode}
+                                    </span>
+                                  </p>
+                                )}
+                                {group.duration && group.duration !== "--" && (
+                                  <p className="text-xs text-zinc-600">
+                                    Duration{" "}
+                                    <span className="font-semibold text-zinc-900">
+                                      {group.duration}
+                                    </span>
+                                  </p>
+                                )}
+                              </div>
+                            </div>
+
+                            <div className="flex flex-col rounded-md border border-amber-200/80 bg-amber-50/60 px-3 py-2.5">
+                              <div className="flex items-center gap-1.5">
+                                <Ban
+                                  size={14}
+                                  className="text-amber-600 flex-shrink-0"
+                                  aria-hidden
+                                />
+                                <p className="text-xs font-semibold uppercase tracking-wide text-amber-800">
+                                  Blocked ({group.blockedSteps.length})
+                                </p>
+                              </div>
+                              <div className="mt-2 flex flex-1 flex-col gap-1">
+                                {group.blockedSteps.length > 0 ? (
+                                  <>
+                                    <p className="text-xs text-zinc-600">
+                                      {group.blockedSteps.length} Step
+                                      {group.blockedSteps.length !== 1
+                                        ? "s"
+                                        : ""}{" "}
+                                      blocked by{" "}
+                                      <span className="font-medium text-zinc-900">
+                                        {group.step.name}
+                                      </span>
+                                    </p>
+                                    <ul
+                                      className="list-disc pl-4 space-y-0.5"
+                                      aria-label={`Steps blocked by ${group.label}`}
+                                    >
+                                      {group.blockedSteps.map((step) => (
+                                        <li
+                                          key={step.id}
+                                          className="text-xs font-medium text-zinc-900"
+                                        >
+                                          {step.name}
+                                        </li>
+                                      ))}
+                                    </ul>
+                                  </>
+                                ) : (
+                                  <p className="text-xs text-zinc-600">
+                                    No downstream steps blocked.
+                                  </p>
+                                )}
+                              </div>
+                            </div>
+
+                            <div className="flex flex-col rounded-md border border-blue-200/80 bg-blue-50/60 px-3 py-2.5">
+                              <div className="flex items-center gap-1.5">
+                                <ArrowRightCircle
+                                  size={14}
+                                  className="text-blue-600 flex-shrink-0"
+                                  aria-hidden
+                                />
+                                <p className="text-xs font-semibold uppercase tracking-wide text-blue-800">
+                                  Debug
+                                </p>
+                              </div>
+                              <div className="mt-2 flex flex-1 flex-col gap-1">
+                                <ol
+                                  className="list-decimal pl-4 space-y-0.5"
+                                  aria-label={`Debug actions for ${group.label}`}
+                                >
+                                  {group.nextActions.map((action) => (
+                                    <li
+                                      key={`${group.id}-${action.id}`}
+                                      className="text-xs text-zinc-900"
+                                    >
+                                      {action.href ? (
+                                        <a
+                                          href={action.href}
+                                          onClick={handlePlaceholderLinkClick}
+                                          className={linkClassName}
+                                        >
+                                          {action.label}
+                                        </a>
+                                      ) : (
+                                        <span className="text-zinc-600">
+                                          {action.label}
+                                        </span>
+                                      )}
+                                    </li>
+                                  ))}
+                                </ol>
+                              </div>
+                            </div>
+                          </div>
+                        </article>
+                      ))}
+                    </section>
+                  ) : (
+                    <p className="py-4 text-center text-sm text-zinc-500">
+                      No failure details in this build.
+                    </p>
+                  )}
+=======
                 <div className="border-t border-zinc-200 mt-2 px-2 py-6 text-center text-sm text-zinc-400">
-                  Your implementation goes here — see AGENTS.md and README.md
+                  Your solution goes here — see AGENTS.md and README.md
+>>>>>>> ff6f3712b2c5c11dab3b332365958ccdd4bfc389
                 </div>
               </div>
             </div>
