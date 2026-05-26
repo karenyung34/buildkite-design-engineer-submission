@@ -97,7 +97,7 @@ We're not evaluating pixel-perfection, production-readiness, or backend integrat
 
 -I replaced the placeholder expanded region with a scannable summary panel to help developers quickly understand what failed, what was blocked, and where to look next.
 
-- Information hierarchy: Card/column layout with failure details, blocked steps, and debug next steps. The most useful info is prioritised
+- Information hierarchy: 3 column layout with failure details, blocked steps, and debug next steps. Grouped info in a modular card layout with concise text with the most useful info prioritised
 - Interaction design: Following existing patterns as this is just a small feature that's being added. Used short clear headings with icons to help for scannability.
 - Accessibility: Used clear text labels and section headings
 - Design sensibility: Kept the solution focused and lightweight, using the available mock data.
