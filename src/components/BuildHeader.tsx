@@ -241,7 +241,10 @@ const BuildHeader: React.FC<BuildHeaderProps> = ({
                       <button
                         type="button"
                         className={cn(
-                          "hidden group-hover/pr:flex group-focus-within/pr:flex py-1.5 px-[7px] rounded-md transition-colors flex-shrink-0 mt-0.5 bg-blue-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2",
+                          "py-1.5 px-[7px] rounded-md transition-colors flex-shrink-0 mt-0.5 bg-blue-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2",
+                          isExpanded
+                            ? "flex"
+                            : "hidden group-hover/pr:flex group-focus-within/pr:flex",
                         )}
                         aria-label={
                           isExpanded ? "Collapse details" : "Expand details"
@@ -316,6 +319,19 @@ const BuildHeader: React.FC<BuildHeaderProps> = ({
 
                       <div className="flex flex-col">
                         <div className="flex items-center gap-1 text-sm/4 text-zinc-900 font-semibold">
+                          <span className="sr-only">
+                            Build status:{" "}
+                            {status === "passed" || status === "complete"
+                              ? "Passed"
+                              : status === "failed"
+                                ? "Failed"
+                                : status === "running"
+                                  ? "Running"
+                                  : status === "canceled"
+                                    ? "Canceled"
+                                    : "Waiting"}
+                            .{" "}
+                          </span>
                           <span className="sr-only sm:not-sr-only sm:inline">
                             {statusPrefix}
                           </span>
@@ -502,16 +518,22 @@ const BuildHeader: React.FC<BuildHeaderProps> = ({
                           </div>
 
                           <div className="grid gap-2 p-2 sm:grid-cols-3">
-                            <div className="flex flex-col rounded-md border border-red-200/80 bg-red-50/60 px-3 py-2.5">
+                            <div
+                              className="flex flex-col rounded-md border border-red-200/80 bg-red-50/60 px-3 py-2.5"
+                              aria-labelledby={`failure-detail-${group.id}`}
+                            >
                               <div className="flex items-center gap-1.5">
                                 <AlertCircle
                                   size={14}
                                   className="text-red-600 flex-shrink-0"
                                   aria-hidden
                                 />
-                                <p className="text-xs font-semibold uppercase tracking-wide text-red-800">
+                                <h4
+                                  id={`failure-detail-${group.id}`}
+                                  className="text-xs font-semibold uppercase tracking-wide text-red-800"
+                                >
                                   Failure
-                                </p>
+                                </h4>
                               </div>
                               <div className="mt-2 flex flex-1 flex-col gap-1">
                                 {group.job && (
@@ -541,16 +563,22 @@ const BuildHeader: React.FC<BuildHeaderProps> = ({
                               </div>
                             </div>
 
-                            <div className="flex flex-col rounded-md border border-amber-200/80 bg-amber-50/60 px-3 py-2.5">
+                            <div
+                              className="flex flex-col rounded-md border border-amber-200/80 bg-amber-50/60 px-3 py-2.5"
+                              aria-labelledby={`blocked-detail-${group.id}`}
+                            >
                               <div className="flex items-center gap-1.5">
                                 <Ban
                                   size={14}
                                   className="text-amber-600 flex-shrink-0"
                                   aria-hidden
                                 />
-                                <p className="text-xs font-semibold uppercase tracking-wide text-amber-800">
+                                <h4
+                                  id={`blocked-detail-${group.id}`}
+                                  className="text-xs font-semibold uppercase tracking-wide text-amber-800"
+                                >
                                   Blocked ({group.blockedSteps.length})
-                                </p>
+                                </h4>
                               </div>
                               <div className="mt-2 flex flex-1 flex-col gap-1">
                                 {group.blockedSteps.length > 0 ? (
@@ -587,16 +615,22 @@ const BuildHeader: React.FC<BuildHeaderProps> = ({
                               </div>
                             </div>
 
-                            <div className="flex flex-col rounded-md border border-blue-200/80 bg-blue-50/60 px-3 py-2.5">
+                            <div
+                              className="flex flex-col rounded-md border border-blue-200/80 bg-blue-50/60 px-3 py-2.5"
+                              aria-labelledby={`debug-detail-${group.id}`}
+                            >
                               <div className="flex items-center gap-1.5">
                                 <ArrowRightCircle
                                   size={14}
                                   className="text-blue-600 flex-shrink-0"
                                   aria-hidden
                                 />
-                                <p className="text-xs font-semibold uppercase tracking-wide text-blue-800">
+                                <h4
+                                  id={`debug-detail-${group.id}`}
+                                  className="text-xs font-semibold uppercase tracking-wide text-blue-800"
+                                >
                                   Debug
-                                </p>
+                                </h4>
                               </div>
                               <div className="mt-2 flex flex-1 flex-col gap-1">
                                 <ol
