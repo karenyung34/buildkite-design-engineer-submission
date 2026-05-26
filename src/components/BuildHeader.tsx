@@ -238,32 +238,8 @@ const BuildHeader: React.FC<BuildHeaderProps> = ({
                 <div className="flex flex-col sm:flex-row sm:items-center gap-1">
                   <div className="flex flex-wrap items-center gap-x-3 gap-y-2 min-w-0 flex-1">
                     <div className="flex items-center gap-2 shrink-0">
-                      <button
-                        type="button"
-                        className={cn(
-                          "py-1.5 px-[7px] rounded-md transition-colors flex-shrink-0 mt-0.5 bg-blue-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2",
-                          isExpanded
-                            ? "flex"
-                            : "hidden group-hover/pr:flex group-focus-within/pr:flex",
-                        )}
-                        aria-label={
-                          isExpanded ? "Collapse details" : "Expand details"
-                        }
-                        aria-expanded={isExpanded}
-                        aria-controls="build-details-panel"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setIsExpanded(!isExpanded);
-                        }}
-                      >
-                        {isExpanded ? (
-                          <ChevronsDownUp size={14} strokeWidth={2.5} className="text-white" aria-hidden="true" />
-                        ) : (
-                          <ChevronsUpDown size={14} strokeWidth={2.5} className="text-white" aria-hidden="true" />
-                        )}
-                      </button>
                       {status === "failed" && (
-                        <div className="group-hover/pr:hidden group-focus-within/pr:hidden" aria-hidden="true">
+                        <div aria-hidden="true">
                           <svg
                             width="28px"
                             height="28px"
@@ -290,7 +266,7 @@ const BuildHeader: React.FC<BuildHeaderProps> = ({
                         </div>
                       )}
                       {status === "running" && (
-                        <div className="rounded-full bg-amber-500 p-1 group-hover/pr:hidden group-focus-within/pr:hidden" aria-hidden="true">
+                        <div className="rounded-full bg-amber-500 p-1" aria-hidden="true">
                           <Loader2
                             size={16}
                             className="text-white animate-spin motion-reduce:animate-none"
@@ -298,7 +274,7 @@ const BuildHeader: React.FC<BuildHeaderProps> = ({
                         </div>
                       )}
                       {(status === "passed" || status === "complete") && (
-                        <div className="rounded-full bg-green-500 p-1 group-hover/pr:hidden group-focus-within/pr:hidden" aria-hidden="true">
+                        <div className="rounded-full bg-green-500 p-1" aria-hidden="true">
                           <Check
                             size={16}
                             className="text-white"
@@ -307,12 +283,12 @@ const BuildHeader: React.FC<BuildHeaderProps> = ({
                         </div>
                       )}
                       {status === "canceled" && (
-                        <div className="rounded-full bg-gray-400 p-1 group-hover/pr:hidden group-focus-within/pr:hidden" aria-hidden="true">
+                        <div className="rounded-full bg-gray-400 p-1" aria-hidden="true">
                           <X size={16} className="text-white" />
                         </div>
                       )}
                       {status === "pending" && (
-                        <div className="rounded-full bg-gray-300 p-1 group-hover/pr:hidden group-focus-within/pr:hidden" aria-hidden="true">
+                        <div className="rounded-full bg-gray-300 p-1" aria-hidden="true">
                           <Clock size={16} className="text-gray-600" />
                         </div>
                       )}
@@ -377,9 +353,38 @@ const BuildHeader: React.FC<BuildHeaderProps> = ({
                   </div>
 
                   <div
-                    className="flex items-center gap-1 text-sm text-gray-600 flex-shrink-0"
+                    className="flex items-center gap-1.5 text-sm text-gray-600 flex-shrink-0"
                     onClick={(e) => e.stopPropagation()}
                   >
+                    <button
+                      type="button"
+                      className="flex py-1.5 px-[7px] rounded-md transition-colors flex-shrink-0 bg-blue-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2"
+                      aria-label={
+                        isExpanded ? "Collapse details" : "Expand details"
+                      }
+                      aria-expanded={isExpanded}
+                      aria-controls="build-details-panel"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setIsExpanded(!isExpanded);
+                      }}
+                    >
+                      {isExpanded ? (
+                        <ChevronsDownUp
+                          size={14}
+                          strokeWidth={2.5}
+                          className="text-white"
+                          aria-hidden="true"
+                        />
+                      ) : (
+                        <ChevronsUpDown
+                          size={14}
+                          strokeWidth={2.5}
+                          className="text-white"
+                          aria-hidden="true"
+                        />
+                      )}
+                    </button>
                     <BuildActionsComboButton
                       status={status}
                       onCancelBuild={onCancelBuild}
