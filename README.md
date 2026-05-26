@@ -107,5 +107,5 @@ We're not evaluating pixel-perfection, production-readiness, or backend integrat
 - Explore how links open from the failed job logs or relevant step row
 - Research edge cases like multiple failures or missing metadata
 - Test more across responsive, keyboard, and screen reader scenarios
-- Once card layout is finalised, improve on background colours of cards so they contrast better with rest of panel background and text on it
+- Once card layout is finalised, improve on background colours of cards so they contrast better with rest of panel background and text
 
