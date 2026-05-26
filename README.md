@@ -72,9 +72,7 @@ We're not evaluating pixel-perfection, production-readiness, or backend integrat
 ## Karen's submission
 
 **Problem/User story:**
-- As a developer reviewing a failed CI/CD build,  
-I want to quickly understand which step and job failed, what downstream work was blocked, and where I should investigate next,  
-so that I can debug the issue faster without manually scanning the full pipeline.
+- As a developer reviewing a failed CI/CD build, I want to quickly understand which step and job failed, what downstream work was blocked, and where I should investigate next, so that I can debug the issue faster without manually scanning the full pipeline.
 
 **User needs:** 
 - Quickly understand that the build has failed and why without having the scan the full step list
