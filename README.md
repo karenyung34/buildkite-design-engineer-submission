@@ -68,3 +68,45 @@ See `AGENTS.md` for a full technical reference (utility signatures, data shape, 
 - `npm run build` and `npm run lint` should still pass when you're done.
 
 We're not evaluating pixel-perfection, production-readiness, or backend integration.
+
+## Karen's submission
+
+**Problem/User story:**
+- As a developer reviewing a failed CI/CD build,  
+I want to quickly understand which step and job failed, what downstream work was blocked, and where I should investigate next,  
+so that I can debug the issue faster without manually scanning the full pipeline.
+
+**User needs:** 
+- Quickly understand that the build has failed and why without having the scan the full step list
+- Identify the failed pipeline step
+- Understand what downstream steps are blocked
+- Know where to investigate next with quick context to start debugging
+
+**Cursor / AI-assisted coding:**
+- Used Cursor to understand the existing structure and patterns
+- Focused on BuildHeader.tsx only
+- Used Cursor as my coding partner and gave it guidance, for example:
+  - Use existing BuildSteps data
+  - Keep solution simple and polished
+  - What step and which job failed?
+  - Show exit code and duration
+  - Highlight downstream blocked steps
+  - Show next steps for debugging
+- Reviewed and refined the hierarchy, copy, and layout myself and asked Cursor to reiterate
+- Ran accessibility audit
+
+**Results/Design Rationale:**
+
+-I replaced the placeholder expanded region with a scannable summary panel to help developers quickly understand what failed, what was blocked, and where to look next.
+
+- Information hierarchy: Card/column layout with failure details, blocked steps, and debug next steps. The most useful info is prioritised
+- Interaction design: Following existing patterns as this is just a small feature that's being added. Used short clear headings with icons to help for scannability.
+- Accessibility: Used clear text labels and section headings
+- Design sensibility: Kept the solution focused and lightweight, using the available mock data.
+
+**Next steps (with more time):**
+- Do quick guerilla testing with developers to validate the layout, language, and debugging flow
+- Explore how links open from the failed job logs or relevant step row
+- Research edge cases like multiple failures or missing metadata
+- Test more across responsive, keyboard, and screen reader scenarios
+
