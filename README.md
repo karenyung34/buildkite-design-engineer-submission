@@ -103,7 +103,7 @@ We're not evaluating pixel-perfection, production-readiness, or backend integrat
 - Design sensibility: Kept the solution focused and lightweight, using the available mock data.
 
 **Next steps (with more time):**
-- Do quick guerilla testing with developers to validate the layout, language, and debugging flow
+- Do quick guerilla testing with developers to validate the layout, language, debugging flow, and do quick code review
 - Explore how links open from the failed job logs or relevant step row
 - Research edge cases like multiple failures or missing metadata
 - Test more across responsive, keyboard, and screen reader scenarios
