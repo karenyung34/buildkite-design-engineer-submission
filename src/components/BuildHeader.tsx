@@ -524,7 +524,7 @@ const BuildHeader: React.FC<BuildHeaderProps> = ({
 
                           <div className="grid gap-2 p-2 sm:grid-cols-3">
                             <div
-                              className="flex flex-col rounded-md border border-red-200/80 bg-red-50/60 px-3 py-2.5"
+                              className="flex flex-col rounded-md border border-red-200/60 bg-red-50/30 px-3 py-2.5"
                               aria-labelledby={`failure-detail-${group.id}`}
                             >
                               <div className="flex items-center gap-1.5">
@@ -542,7 +542,7 @@ const BuildHeader: React.FC<BuildHeaderProps> = ({
                               </div>
                               <div className="mt-2 flex flex-1 flex-col gap-1">
                                 {group.job && (
-                                  <p className="text-xs text-zinc-600">
+                                  <p className="text-xs text-zinc-700">
                                     Step{" "}
                                     <span className="font-medium text-zinc-900">
                                       {group.step.name}
@@ -550,7 +550,7 @@ const BuildHeader: React.FC<BuildHeaderProps> = ({
                                   </p>
                                 )}
                                 {group.exitCode != null && (
-                                  <p className="text-xs text-zinc-600">
+                                  <p className="text-xs text-zinc-700">
                                     Exit code{" "}
                                     <span className="font-semibold text-zinc-900">
                                       {group.exitCode}
@@ -558,7 +558,7 @@ const BuildHeader: React.FC<BuildHeaderProps> = ({
                                   </p>
                                 )}
                                 {group.duration && group.duration !== "--" && (
-                                  <p className="text-xs text-zinc-600">
+                                  <p className="text-xs text-zinc-700">
                                     Duration{" "}
                                     <span className="font-semibold text-zinc-900">
                                       {group.duration}
@@ -588,7 +588,7 @@ const BuildHeader: React.FC<BuildHeaderProps> = ({
                               <div className="mt-2 flex flex-1 flex-col gap-1">
                                 {group.blockedSteps.length > 0 ? (
                                   <>
-                                    <p className="text-xs text-zinc-600">
+                                    <p className="text-xs text-zinc-700">
                                       {group.blockedSteps.length} Step
                                       {group.blockedSteps.length !== 1
                                         ? "s"
@@ -613,7 +613,7 @@ const BuildHeader: React.FC<BuildHeaderProps> = ({
                                     </ul>
                                   </>
                                 ) : (
-                                  <p className="text-xs text-zinc-600">
+                                  <p className="text-xs text-zinc-700">
                                     No downstream steps blocked.
                                   </p>
                                 )}
